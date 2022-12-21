@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"snippetbox/internal/models"
 	"strings"
 
@@ -19,34 +18,6 @@ type application struct {
 	infoLogger    *log.Logger
 	snippets      *models.SnippetModel
 	templateCache map[string]*template.Template
-}
-
-// * To counter directory listing attacks
-type neuteredFS struct {
-	fs http.FileSystem
-}
-
-func (nfs neuteredFS) Open(path string) (http.File, error) {
-	f, err := nfs.fs.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	s, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if s.IsDir() {
-		index := filepath.Join(path, "index.html")
-		//* If index.html isn't found, it'll return, otherwise the index.html will be served
-		if _, err := nfs.fs.Open(index); err != nil {
-			closeErr := f.Close()
-			if closeErr != nil {
-				return nil, closeErr
-			}
-			return nil, err
-		}
-	}
-	return f, nil
 }
 
 func main() {
@@ -69,7 +40,6 @@ func main() {
 		log.Ldate|log.Ltime)
 	errorLogger := log.New(os.Stderr, "ERROR\t",
 		log.Ldate|log.Ltime|log.Lshortfile)
-
 	db, err := openDB(*dsn)
 	if err != nil {
 		errorLogger.Fatal(err)
