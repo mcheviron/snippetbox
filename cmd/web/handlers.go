@@ -14,9 +14,9 @@ import (
 
 type snippetCreateForm struct {
 	validator.Validator
-	Title   string
-	Content string
-	Expires int
+	Title   string `form:"title"`
+	Content string `form:"content"`
+	Expires int    `form:"expires"`
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -60,31 +60,29 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	form := snippetCreateForm{}
+	err := app.decodePostform(r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	title := r.PostForm.Get("title")
-	content := r.PostForm.Get("content")
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-	form := snippetCreateForm{
-		Title:   title,
-		Content: content,
-		Expires: expires,
-	}
+
 	// Check for input error
-	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(
+		validator.NotBlank(form.Title),
+		"title",
+		"This field cannot be blank",
+	)
 	form.CheckField(
 		validator.MaxChars(form.Title, 100),
 		"title",
 		"This field can't be more than 100 characters long",
 	)
-	form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+	form.CheckField(
+		validator.NotBlank(form.Content),
+		"content",
+		"This field cannot be blank",
+	)
 	form.CheckField(
 		validator.PermittedInt(form.Expires, 1, 7, 365),
 		"expires",
