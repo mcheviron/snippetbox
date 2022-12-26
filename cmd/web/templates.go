@@ -3,9 +3,8 @@ package main
 import (
 	"html/template"
 	"path/filepath"
-	"time"
-
 	"snippetbox/internal/models"
+	"time"
 )
 
 type templateData struct {
@@ -35,23 +34,18 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		name := filepath.Base(page)
 		ts, err := template.New(name).
 			Funcs(templateFunctions).
-			ParseFiles(
-				"./ui/html/base.tmpl.html",
-			)
+			ParseFiles("./ui/html/base.tmpl.html")
 		if err != nil {
 			return nil, err
 		}
-
 		ts, err = ts.ParseGlob("./ui/html/partials/*.tmpl.html")
 		if err != nil {
 			return nil, err
 		}
-
 		ts, err = ts.ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
-
 		cache[name] = ts
 	}
 	return cache, nil

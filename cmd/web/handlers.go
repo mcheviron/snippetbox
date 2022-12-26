@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"snippetbox/internal/models"
+	"snippetbox/internal/validator"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 type snippetCreateForm struct {
-	Title       string
-	Content     string
-	Expires     int
-	FieldErrors map[string]string
+	validator.Validator
+	Title   string
+	Content string
+	Expires int
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -25,10 +25,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
 	data := app.newTemplateData(r)
 	data.Snippets = snippets
-
 	app.render(w, http.StatusOK, "home.tmpl.html", data)
 }
 
@@ -39,7 +37,6 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-
 	snippet, err := app.snippets.Get(id)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -49,10 +46,8 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
-
 	app.render(w, http.StatusOK, "view.tmpl.html", data)
 }
 
@@ -78,24 +73,24 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 	form := snippetCreateForm{
-		Title:       title,
-		Content:     content,
-		Expires:     expires,
-		FieldErrors: make(map[string]string),
+		Title:   title,
+		Content: content,
+		Expires: expires,
 	}
 	// Check for input error
-	if strings.TrimSpace(title) == "" {
-		form.FieldErrors["title"] = "This field cannot be blank"
-	} else if utf8.RuneCountInString(title) > 100 {
-		form.FieldErrors["title"] = "This field cannot be more than 100 characters long"
-	}
-	if strings.TrimSpace(content) == "" {
-		form.FieldErrors["content"] = "This field cannot be blank"
-	}
-	if expires != 1 && expires != 7 && expires != 365 {
-		form.FieldErrors["expires"] = "This field must equal 1, 7 or 365"
-	}
-	if len(form.FieldErrors) > 0 {
+	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(
+		validator.MaxChars(form.Title, 100),
+		"title",
+		"This field can't be more than 100 characters long",
+	)
+	form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+	form.CheckField(
+		validator.PermittedInt(form.Expires, 1, 7, 365),
+		"expires",
+		"This field must be equal to 1, 7 or 365",
+	)
+	if !form.Empty() {
 		data := app.newTemplateData(r)
 		data.Form = form
 		app.render(w, http.StatusUnprocessableEntity, "create.tmpl.html", data)
@@ -112,6 +107,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	)
 }
 
+// To deactivate directory listing for fileservers
 func (app *application) noDirListingHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/") {
