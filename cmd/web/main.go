@@ -21,11 +21,7 @@ type application struct {
 }
 
 func main() {
-	addr := flag.String(
-		"addr",
-		":8000",
-		"HTTP network address to bind to",
-	)
+	addr := flag.String("addr", ":8000", "HTTP network address to bind to")
 	dsn := flag.String(
 		"dsn",
 		"web:Slavendral_1996@/snippetbox?parseTime=true",

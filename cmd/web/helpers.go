@@ -20,23 +20,14 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 }
 
 func (app *application) clientError(w http.ResponseWriter, status int) {
-	http.Error(
-		w,
-		http.StatusText(status),
-		status,
-	)
+	http.Error(w, http.StatusText(status), status)
 }
 
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
-func (app *application) render(
-	w http.ResponseWriter,
-	status int,
-	page string,
-	data *templateData,
-) {
+func (app *application) render(w http.ResponseWriter, status int, page string, data *templateData) {
 	ts, exist := app.templateCache[page]
 	if !exist {
 		err := fmt.Errorf("the template %s doesn't exist", page)

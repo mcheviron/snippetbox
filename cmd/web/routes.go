@@ -17,7 +17,7 @@ func (app *application) routes() http.Handler {
 	filerServer := http.FileServer(http.Dir("./ui/static"))
 	router.Handler(
 		http.MethodGet, "/static/*filepath",
-		http.StripPrefix("/static", filerServer),
+		app.noDirListingHandler(http.StripPrefix("/static", filerServer)),
 	)
 
 	router.HandlerFunc(http.MethodGet, "/", app.home)
