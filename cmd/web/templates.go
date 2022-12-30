@@ -12,13 +12,14 @@ type templateData struct {
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
 	Form        any
+	Flash       string
 }
 
 func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
-// * Functions that are meant to be used inside templates to deliver dynamic behaviour
+// Functions that are meant to be used inside templates to deliver dynamic behaviour
 var templateFunctions = template.FuncMap{
 	"humanDate": humanDate,
 }

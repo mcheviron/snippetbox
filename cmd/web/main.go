@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -9,17 +10,22 @@ import (
 	"os"
 	"snippetbox/internal/models"
 	"strings"
+	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
-	errorLogger   *log.Logger
-	infoLogger    *log.Logger
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
+	errorLogger    *log.Logger
+	infoLogger     *log.Logger
+	snippets       *models.Snippets
+	users          *models.Users
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -51,21 +57,38 @@ func main() {
 
 	formDecoder := form.NewDecoder()
 
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+	// Ensures that cookies are sent over HTTPS only
+	sessionManager.Cookie.Secure = true
+
 	app := &application{
-		errorLogger:   errorLogger,
-		infoLogger:    infoLogger,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		formDecoder:   formDecoder,
+		errorLogger:    errorLogger,
+		infoLogger:     infoLogger,
+		snippets:       &models.Snippets{DB: db},
+		users:          &models.Users{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
+
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	server := &http.Server{
-		Addr:     *addr,
-		ErrorLog: errorLogger,
-		Handler:  app.routes(),
+		Addr:         *addr,
+		ErrorLog:     errorLogger,
+		Handler:      app.routes(),
+		TLSConfig:    tlsConfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	infoLogger.Printf("Starting server on %s", *addr)
-	errorLogger.Fatal(server.ListenAndServe())
+	errorLogger.Fatal(server.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem"))
 }
 
 func openDB(dsn string) (*sql.DB, error) {

@@ -20,11 +20,54 @@ func (app *application) routes() http.Handler {
 		app.noDirListingHandler(http.StripPrefix("/static", filerServer)),
 	)
 
-	router.HandlerFunc(http.MethodGet, "/", app.home)
-	router.HandlerFunc(http.MethodGet, "/snippet/view/:id", app.snippetView)
-	router.HandlerFunc(http.MethodGet, "/snippet/create", app.snippetCreate)
-	router.HandlerFunc(http.MethodPost, "/snippet/create", app.snippetCreatePost)
+	// This will be a middleware added to our main routes to create a per user session
+	dynamicMiddleware := alice.New(app.sessionManager.LoadAndSave)
+	router.Handler(
+		http.MethodGet,
+		"/",
+		dynamicMiddleware.ThenFunc(app.home),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/snippet/view/:id",
+		dynamicMiddleware.ThenFunc(app.snippetView),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/snippet/create",
+		dynamicMiddleware.ThenFunc(app.snippetCreate),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/snippet/create",
+		dynamicMiddleware.ThenFunc(app.snippetCreatePost),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/user/signup",
+		dynamicMiddleware.ThenFunc(app.userSignup),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/signup",
+		dynamicMiddleware.ThenFunc(app.userSignupPost),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/user/login",
+		dynamicMiddleware.ThenFunc(app.userLogin),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/login",
+		dynamicMiddleware.ThenFunc(app.userLoginPost),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/logout",
+		dynamicMiddleware.ThenFunc(app.userLogoutPost),
+	)
 
-	middleWare := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
-	return middleWare.Then(router)
+	standardMiddleware := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+	return standardMiddleware.Then(router)
 }
