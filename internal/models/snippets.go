@@ -14,15 +14,22 @@ type Snippet struct {
 	Expires time.Time
 }
 
-type SnippetModel struct {
+type Snippets struct {
 	DB *sql.DB
 }
 
-func (m *SnippetModel) Insert(title, content string, expires int) (int, error) {
+func (m *Snippets) Insert(title, content string, expires int) (int, error) {
 	result, err := m.DB.Exec(
 		`
-		INSERT INTO snippets (title, content, created, expires)
-		VALUES (?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY))
+                         INSERT INTO
+                           snippets (title, content, created, expires)
+                         VALUES
+                           (
+                             ?,
+                             ?,
+                             UTC_TIMESTAMP (),
+                             DATE_ADD (UTC_TIMESTAMP (), INTERVAL ? DAY)
+                           )
 	`, title, content, expires,
 	)
 	if err != nil {
@@ -36,12 +43,20 @@ func (m *SnippetModel) Insert(title, content string, expires int) (int, error) {
 	return int(id), nil
 }
 
-func (m *SnippetModel) Get(id int) (*Snippet, error) {
+func (m *Snippets) Get(id int) (*Snippet, error) {
 	s := &Snippet{}
 	err := m.DB.QueryRow(
 		`
-	SELECT id, title, content, expires FROM snippets
-	WHERE expires > UTC_TIMESTAMP() AND id = ?
+                     SELECT
+                       id,
+                       title,
+                       content,
+                       expires
+                     FROM
+                       snippets
+                     WHERE
+                       expires > UTC_TIMESTAMP ()
+                       AND id = ?
 	`, id,
 	).Scan(&s.ID, &s.Title, &s.Content, &s.Expires)
 	if err != nil {
@@ -55,11 +70,23 @@ func (m *SnippetModel) Get(id int) (*Snippet, error) {
 }
 
 // * This will return the last 10 snippets added
-func (m *SnippetModel) Latest() ([]*Snippet, error) {
+func (m *Snippets) Latest() ([]*Snippet, error) {
 	rows, err := m.DB.Query(
 		`
-		SELECT id, title, content, created, expires FROM snippets
-		WHERE expires > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 10
+                        SELECT
+                          id,
+                          title,
+                          content,
+                          created,
+                          expires
+                        FROM
+                          snippets
+                        WHERE
+                          expires > UTC_TIMESTAMP ()
+                        ORDER BY
+                          id DESC
+                        LIMIT
+                          10
 		`,
 	)
 	if err != nil {

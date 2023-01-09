@@ -40,6 +40,18 @@ func main() {
 	if !strings.Contains(*addr, ":") {
 		*addr = ":" + *addr
 	}
+	hosts := strings.Split(*addr, ":")
+	for i, v := range hosts {
+		if v == "" {
+			hosts = append(hosts[:i], hosts[i+1:]...)
+		}
+	}
+	var host string
+	if len(hosts) < 2 {
+		host = "localhost"
+	} else {
+		host = strings.Split(*addr, ":")[0]
+	}
 	infoLogger := log.New(os.Stdout, "INFO\t",
 		log.Ldate|log.Ltime)
 	errorLogger := log.New(os.Stderr, "ERROR\t",
@@ -60,6 +72,12 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
+	// NOTE: This would pretty much eleminate CSRF attacks because
+	// only cookies comming from same site will be used but this will mean
+	// that links pointing to your site on other sites will not load the cookies
+	// and the used won't be logged in even if he did already login, which can be bad UX.
+	// sessionManager.Cookie.SameSite = http.SameSiteStrictMode
+
 	// Ensures that cookies are sent over HTTPS only
 	sessionManager.Cookie.Secure = true
 
@@ -86,8 +104,7 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-
-	infoLogger.Printf("Starting server on %s", *addr)
+	infoLogger.Printf("Starting server on https://%s%s", host, *addr)
 	errorLogger.Fatal(server.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem"))
 }
 
@@ -104,3 +121,7 @@ func openDB(dsn string) (*sql.DB, error) {
 	}
 	return db, nil
 }
+
+// TODO: Implement an HTTP server that redirects to the HTTPS one if you have time
+// Generally this will be offloaded to an external party if you're using ACME
+// certs

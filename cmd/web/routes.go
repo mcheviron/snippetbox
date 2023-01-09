@@ -21,7 +21,11 @@ func (app *application) routes() http.Handler {
 	)
 
 	// This will be a middleware added to our main routes to create a per user session
-	dynamicMiddleware := alice.New(app.sessionManager.LoadAndSave)
+	dynamicMiddleware := alice.New(
+		app.sessionManager.LoadAndSave,
+		noSurf,
+		app.authenticate,
+	)
 	router.Handler(
 		http.MethodGet,
 		"/",
@@ -31,16 +35,6 @@ func (app *application) routes() http.Handler {
 		http.MethodGet,
 		"/snippet/view/:id",
 		dynamicMiddleware.ThenFunc(app.snippetView),
-	)
-	router.Handler(
-		http.MethodGet,
-		"/snippet/create",
-		dynamicMiddleware.ThenFunc(app.snippetCreate),
-	)
-	router.Handler(
-		http.MethodPost,
-		"/snippet/create",
-		dynamicMiddleware.ThenFunc(app.snippetCreatePost),
 	)
 	router.Handler(
 		http.MethodGet,
@@ -62,12 +56,24 @@ func (app *application) routes() http.Handler {
 		"/user/login",
 		dynamicMiddleware.ThenFunc(app.userLoginPost),
 	)
+
+	// NOTE: Protected (authenticated-only) routes
+	protectedMiddleware := dynamicMiddleware.Append(app.requireAuthentication)
+	router.Handler(
+		http.MethodGet,
+		"/snippet/create",
+		protectedMiddleware.ThenFunc(app.snippetCreate),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/snippet/create",
+		protectedMiddleware.ThenFunc(app.snippetCreatePost),
+	)
 	router.Handler(
 		http.MethodPost,
 		"/user/logout",
-		dynamicMiddleware.ThenFunc(app.userLogoutPost),
+		protectedMiddleware.ThenFunc(app.userLogoutPost),
 	)
-
 	standardMiddleware := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 	return standardMiddleware.Then(router)
 }

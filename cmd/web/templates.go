@@ -8,18 +8,20 @@ import (
 )
 
 type templateData struct {
-	CurrentYear int
-	Snippet     *models.Snippet
-	Snippets    []*models.Snippet
-	Form        any
-	Flash       string
+	CurrentYear     int
+	Snippet         *models.Snippet
+	Snippets        []*models.Snippet
+	Form            any
+	Flash           string
+	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
-// Functions that are meant to be used inside templates to deliver dynamic behaviour
+// NOTE: Functions that are meant to be used inside templates to deliver dynamic behaviour
 var templateFunctions = template.FuncMap{
 	"humanDate": humanDate,
 }
