@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"snippetbox/ui"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
@@ -14,11 +15,20 @@ func (app *application) routes() http.Handler {
 		app.notFound(w)
 	})
 
-	filerServer := http.FileServer(http.Dir("./ui/static"))
+	// filerServer := http.FileServer(http.Dir("./ui/static"))
+	// NOTE: convert the embedded FS into an http.FS
+	filerServer := http.FileServer(http.FS(ui.Files))
+	// NOTE: no need for stripping the prefix anymore because the embedded FS root is at
+	// ui/ so to navigate in the child dir static/ you need it prefixed anyway
 	router.Handler(
-		http.MethodGet, "/static/*filepath",
-		app.noDirListingHandler(http.StripPrefix("/static", filerServer)),
+		http.MethodGet,
+		"/static/*filepath",
+		app.noDirListingHandler(filerServer),
 	)
+	// router.Handler(
+	// 	http.MethodGet, "/static/*filepath",
+	// 	app.noDirListingHandler(http.StripPrefix("/static", filerServer)),
+	// )
 
 	// This will be a middleware added to our main routes to create a per user session
 	dynamicMiddleware := alice.New(
