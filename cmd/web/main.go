@@ -21,8 +21,8 @@ import (
 type application struct {
 	errorLogger    *log.Logger
 	infoLogger     *log.Logger
-	snippets       *models.Snippets
-	users          *models.Users
+	snippets       models.SnippetModelInterface
+	users          models.UserModelInterface
 	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
@@ -84,8 +84,8 @@ func main() {
 	app := &application{
 		errorLogger:    errorLogger,
 		infoLogger:     infoLogger,
-		snippets:       &models.Snippets{DB: db},
-		users:          &models.Users{DB: db},
+		snippets:       &models.SnippetModel{DB: db},
+		users:          &models.UserModel{DB: db},
 		templateCache:  templateCache,
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
@@ -125,3 +125,19 @@ func openDB(dsn string) (*sql.DB, error) {
 // TODO: Implement an HTTP server that redirects to the HTTPS one if you have time
 // Generally this will be offloaded to an external party if you're using ACME
 // certs
+
+// func redirectToHTTPS(tlsPort string) {
+// 	httpSrv := http.Server{
+// 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 			host, _, err := net.SplitHostPort(r.Host)
+// 			if err != nil {
+// 				return
+// 			}
+// 			u := r.URL
+// 			u.Host = net.JoinHostPort(host, tlsPort)
+// 			u.Scheme = "https"
+// 			http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
+// 		}),
+// 	}
+// 	log.Fatal(httpSrv.ListenAndServe())
+// }

@@ -52,7 +52,17 @@ func MaxChars(value string, n int) bool {
 
 // Returns true if a value is in a list of permitted integers
 // eg. 7 is in a list of (1, 7, 365)
-func PermittedInt(value int, permittedValues ...int) bool {
+// func PermittedInt(value int, permittedValues ...int) bool {
+// 	for i := range permittedValues {
+// 		if value == permittedValues[i] {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// NOTE: replaced PermittedInt() with this generic function for feasibility
+func PermittedValues[T comparable](value T, permittedValues ...T) bool {
 	for i := range permittedValues {
 		if value == permittedValues[i] {
 			return true

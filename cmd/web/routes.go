@@ -25,11 +25,7 @@ func (app *application) routes() http.Handler {
 		"/static/*filepath",
 		app.noDirListingHandler(filerServer),
 	)
-	// router.Handler(
-	// 	http.MethodGet, "/static/*filepath",
-	// 	app.noDirListingHandler(http.StripPrefix("/static", filerServer)),
-	// )
-
+	router.HandlerFunc(http.MethodGet, "/ping", ping)
 	// This will be a middleware added to our main routes to create a per user session
 	dynamicMiddleware := alice.New(
 		app.sessionManager.LoadAndSave,

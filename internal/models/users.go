@@ -19,11 +19,16 @@ type User struct {
 }
 
 // UserModel
-type Users struct {
+type UserModel struct {
 	DB *sql.DB
 }
+type UserModelInterface interface {
+	Insert(name, email, password string) error
+	Authenticate(email, password string) (int, error)
+	Exists(id int) (bool, error)
+}
 
-func (u *Users) Insert(name, email, password string) error {
+func (u *UserModel) Insert(name, email, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return err
@@ -47,7 +52,7 @@ func (u *Users) Insert(name, email, password string) error {
 	return nil
 }
 
-func (u *Users) Authenticate(email, password string) (int, error) {
+func (u *UserModel) Authenticate(email, password string) (int, error) {
 	var id int
 	var hashedPassword []byte
 
@@ -79,7 +84,7 @@ func (u *Users) Authenticate(email, password string) (int, error) {
 	return id, nil
 }
 
-func (u *Users) Exists(id int) (bool, error) {
+func (u *UserModel) Exists(id int) (bool, error) {
 	var exists bool
 	err := u.DB.QueryRow(`
                      SELECT

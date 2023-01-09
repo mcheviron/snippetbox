@@ -14,11 +14,16 @@ type Snippet struct {
 	Expires time.Time
 }
 
-type Snippets struct {
+type SnippetModel struct {
 	DB *sql.DB
 }
+type SnippetModelInterface interface {
+	Insert(title, content string, expires int) (int, error)
+	Get(id int) (*Snippet, error)
+	Latest() ([]*Snippet, error)
+}
 
-func (m *Snippets) Insert(title, content string, expires int) (int, error) {
+func (m *SnippetModel) Insert(title, content string, expires int) (int, error) {
 	result, err := m.DB.Exec(
 		`
                          INSERT INTO
@@ -43,7 +48,7 @@ func (m *Snippets) Insert(title, content string, expires int) (int, error) {
 	return int(id), nil
 }
 
-func (m *Snippets) Get(id int) (*Snippet, error) {
+func (m *SnippetModel) Get(id int) (*Snippet, error) {
 	s := &Snippet{}
 	err := m.DB.QueryRow(
 		`
@@ -70,7 +75,7 @@ func (m *Snippets) Get(id int) (*Snippet, error) {
 }
 
 // * This will return the last 10 snippets added
-func (m *Snippets) Latest() ([]*Snippet, error) {
+func (m *SnippetModel) Latest() ([]*Snippet, error) {
 	rows, err := m.DB.Query(
 		`
                         SELECT

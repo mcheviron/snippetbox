@@ -96,7 +96,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		"This field cannot be blank",
 	)
 	form.CheckField(
-		validator.PermittedInt(form.Expires, 1, 7, 365),
+		validator.PermittedValues(form.Expires, 1, 7, 365),
 		"expires",
 		"This field must be equal to 1, 7 or 365",
 	)
@@ -153,7 +153,6 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		app.render(w, http.StatusUnprocessableEntity, "login.tmpl.html", data)
 		return
 	}
-
 	id, err := app.users.Authenticate(form.Email, form.Password)
 	if err != nil {
 		if errors.Is(err, models.ErrInvalidCredentials) {
@@ -248,4 +247,8 @@ func (app *application) noDirListingHandler(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
 }
